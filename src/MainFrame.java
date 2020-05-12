@@ -10,7 +10,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -23,12 +25,15 @@ public class MainFrame extends Canvas implements MouseListener {
 	private static ArrayList<Point> points = new ArrayList<Point>();
 	private static ArrayList<myLine> lines = new ArrayList<myLine>();
 	private static LinkedList<Integer> weights = new LinkedList<Integer>();
+	private static LinkedList<Integer> answer = new LinkedList<Integer>();
+	private static Set<Integer> visitedNodes = new LinkedHashSet<>();
+	private static Set<Integer> unvisitedNodes = new LinkedHashSet<>();
 	private static boolean btnCustomPointIsPressed = true, btnRegularPointIsPressed = false, btnLineIsPressed = false, btnHamiltonIsPressed = false;
-	private int oldX, oldY, newX, newY;
+	private int oldX, oldY, newX, newY, tmp_sum;
 	private String tmpLineLength;
 	private int[][] weightMatrix;
-	private int[] answer;
-	private int V , pathCount = 1, solutionWeight = Integer.MAX_VALUE;
+	private int[] tmp_answer;
+	private int V , pathCount = 1, solutionWeight = Integer.MAX_VALUE, count = 0;
 
 
 	/**
@@ -125,13 +130,13 @@ public class MainFrame extends Canvas implements MouseListener {
 						weightMatrix[thisLine.getPoint2()][thisLine.getPoint1()] = thisLine.getLength();
 				}
 				
-				answer = new int[points.size()];
+				tmp_answer = new int[points.size()];
 				V = points.size();
 				doHamilton(0);
 				
 				System.out.println("\nThe answer is : ");
-	            for(int i = 0;i < answer.length; i++)
-	            	System.out.print(" " + answer[i]);
+	            for(int i = 0;i < answer.size(); i++)
+	            	System.out.print(" " + (answer.get(i)+1));
 			}
 			
 		});
@@ -247,23 +252,19 @@ public class MainFrame extends Canvas implements MouseListener {
 		repaint();
 	}
 	
-	private void doHamilton(int nodeNumber) {
-		
-		System.out.println();
-		
+	private void doHamilton(int nodeNumber) {		
 		/** solution **/
         if (weightMatrix[nodeNumber][0] != 0 && pathCount == V) {
-        	System.out.println("Solution found");
-        	// Вот тут надо доделать подсчёт веса пути, чтобы потом найти минимальный !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        	int tmp_sum;
-        	for(int i = 0; i < answer.length; i++) {
-        		for(int j = 0; j < lines.size(); j++) {
-        			if(lines.get(j).getPoint1() == answer[i] || lines.get(j).getPoint2() == answer[i])
-        				//tmp_sum+=lines.get(j)
-        		}
+        	System.out.println("Solution found");        	
+        	//If we found path with weight less than we already have, replace it.
+        	if(findPathWeight(tmp_answer) < solutionWeight) {
+        			solutionWeight = tmp_sum;
+        			for(int i : tmp_answer)
+        				answer.add(tmp_answer[i]);
         	}
-        	
+        System.out.println("Solution weight is " + solutionWeight);
         }
+        
         /** all vertices selected but last vertex not linked to 0 **/
         if (pathCount == V)
             return;
@@ -272,7 +273,7 @@ public class MainFrame extends Canvas implements MouseListener {
             /** if connected **/
             if (weightMatrix[nodeNumber][v] != 0 && weightMatrix[nodeNumber][v] != -1){
                 /** add to path **/            
-                answer[pathCount++] = v;    
+                tmp_answer[pathCount++] = v;    
                 /** remove connection **/  
                 weights.add(weightMatrix[nodeNumber][v]);
                 weightMatrix[nodeNumber][v] = 0;
@@ -296,17 +297,97 @@ public class MainFrame extends Canvas implements MouseListener {
             }
             
         }
-		
 	}
+	
+	
+	//   0		10		35		400
+	//   10		0		10		111
+	//   35		10		0		10
+	//   400	111		10		0
+	// Обход - 430. Ответ - 75.
+	private void gregoryAlg(int node) {
+		
+        
+        
+	}
+	
+	private int dijkstra(Point source, Point destination) {
+		
+		unvisitedNodes.add(source.getNumber());
+		while(unvisitedNodes.size() != 0) {
+			Point thisPoint = lowestDistance(unvisitedNodes);
+		}
+		
+		
+		
+		return 5;
+	}
+	
+	private Point lowestDistance(Set <Integer> nodes) {
+		Point ans = null;
+		int lowestDistance = Integer.MAX_VALUE;
+		for(int i = 0; i < nodes.size(); i++) {
+			
+		}
+	}
+	
+	private myLine findLine(Point p1, Point p2) {
+		myLine ans = null;
+		for(int i = 0; i < points.size(); i++) {
+			for(int j = 0; j < lines.size(); j++) {
+				if((lines.get(j).getPoint1() == p1.getNumber() && lines.get(j).getPoint2() == p2.getNumber()) || (lines.get(j).getPoint1() == p2.getNumber() && lines.get(j).getPoint2() == p1.getNumber()))
+					ans = lines.get(j);
+			}
+		}
+		return ans;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
     /** function to check if path is already selected **/
     public boolean isPresent(int v)
     {
         for (int i = 0; i < pathCount - 1; i++)
-            if (answer[i] == v)
+            if (tmp_answer[i] == v)
                 return true;
         return false;                
+    }
+    
+    // Given array of points find the path, that connect them exactly the same order and return path's weight
+    private int findPathWeight (int[] arr) {
+    	for(int i = 0; i < arr.length - 1; i++) {
+    		for(int j = 0; j < lines.size(); j++) {
+    			if(lines.get(j).getPoint1() == arr[i] && lines.get(j).getPoint2() == arr[i+1])
+    				tmp_sum += lines.get(j).getLength();
+    		}
+    	}
+    	
+    	// Checking the connecting of the first node and the last one
+    	for(int j = 0; j < lines.size(); j++) {
+    		if((lines.get(j).getPoint1() == arr[0] && lines.get(j).getPoint2() == arr[arr.length - 1]) ||
+   					   (lines.get(j).getPoint1() == arr[arr.length - 1] && lines.get(j).getPoint2() == arr[0]))
+   				{tmp_sum += lines.get(j).getLength(); break;}
+    	}
+    	return tmp_sum;
     }
 
 }
